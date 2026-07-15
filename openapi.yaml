@@ -1,0 +1,645 @@
+openapi: 3.0.0
+info:
+  title: API de Cooperativas
+  description: API para gerenciamento de cooperativas de reciclagem
+  version: 1.0.0
+  contact:
+    name: João Victor Marcondes
+    email: joao@example.com
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Servidor de desenvolvimento
+  - url: https://api.cooperativas.com
+    description: Servidor de produção
+
+tags:
+  - name: Autenticação
+    description: Rotas de autenticação de usuários
+  - name: Recebimento
+    description: Operações de recebimento de materiais
+  - name: Triagem
+    description: Operações de triagem de materiais
+  - name: Prensa
+    description: Operações de prensa
+  - name: Bazar
+    description: Operações de bazar
+  - name: Consultas
+    description: Consultas de dados
+
+paths:
+  /:
+    get:
+      summary: Rota inicial
+      description: Mensagem de boas-vindas da API
+      tags:
+        - Geral
+      responses:
+        200:
+          description: Mensagem de boas-vindas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Bem-vindo à API de Cooperativas
+                  version:
+                    type: number
+                    example: 1.0
+                  author:
+                    type: string
+                    example: João Victor Marcondes
+
+  /login:
+    post:
+      summary: Verificar credenciais
+      description: Autentica um usuário e retorna seu cargo
+      tags:
+        - Autenticação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+                - senha
+              properties:
+                user:
+                  type: string
+                  description: Nome de usuário
+                  example: vitoria
+                senha:
+                  type: string
+                  description: Senha do usuário
+                  example: "123456"
+      responses:
+        200:
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario:
+                    type: string
+                    example: vitoria
+                  cargo:
+                    type: string
+                    enum: [adm, tesoureira]
+                    example: tesoureira
+                  autenticado:
+                    type: boolean
+                    example: true
+        400:
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /consultar:
+    post:
+      summary: Consultar dados
+      description: Consulta dados das tabelas baseado no cargo do usuário
+      tags:
+        - Consultas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+                - senha
+              properties:
+                user:
+                  type: string
+                  example: vitoria
+                senha:
+                  type: string
+                  example: "123456"
+      responses:
+        200:
+          description: Dados consultados com sucesso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ConsultaResponse'
+                  - type: object
+                    properties:
+                      usuario:
+                        $ref: '#/components/schemas/UsuarioInfo'
+        400:
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Acesso negado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Erro interno no servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /consultar/filtrado:
+    post:
+      summary: Consultar dados com filtros
+      description: Consulta dados de uma tabela específica com filtros avançados
+      tags:
+        - Consultas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user
+                - senha
+                - tabela
+              properties:
+                user:
+                  type: string
+                  example: vitoria
+                senha:
+                  type: string
+                  example: "123456"
+                tabela:
+                  type: string
+                  enum: [recebimento, triagem, prensa, bazar]
+                  example: recebimento
+                filtros:
+                  $ref: '#/components/schemas/Filtros'
+      responses:
+        200:
+          description: Dados consultados com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tabela:
+                    type: string
+                    example: recebimento
+                  filtros_aplicados:
+                    $ref: '#/components/schemas/Filtros'
+                  total:
+                    type: integer
+                    example: 10
+                  dados:
+                    type: array
+                    items:
+                      type: object
+        400:
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Acesso negado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recebimento:
+    post:
+      summary: Registrar recebimento
+      description: Registra um novo recebimento de materiais
+      tags:
+        - Recebimento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - procedencia
+                - placa_caminhao
+                - peso_total
+                - material_tipo
+                - recebido_por
+                - cooperativa
+              properties:
+                procedencia:
+                  type: string
+                  enum: [coleta, mercado]
+                  example: coleta
+                placa_caminhao:
+                  type: string
+                  example: ABC-1234
+                peso_total:
+                  type: number
+                  example: 150.5
+                material_tipo:
+                  type: string
+                  example: papel
+                recebido_por:
+                  type: string
+                  example: João
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopercel]
+                  example: santa maria
+      responses:
+        200:
+          description: Dados enviados com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dados enviados com sucesso!
+                  horario_envio:
+                    type: string
+                    format: date-time
+                    example: 26/01/2026 14:30:00
+        400:
+          description: Erro na requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /triagem:
+    post:
+      summary: Registrar triagem
+      description: Registra uma nova triagem de materiais
+      tags:
+        - Triagem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mesa_id
+                - material_tipo
+                - qntd_bags
+                - peso_rejeito
+                - cooperativa
+              properties:
+                mesa_id:
+                  type: integer
+                  example: 1
+                material_tipo:
+                  type: string
+                  example: plastico
+                qntd_bags:
+                  type: integer
+                  example: 5
+                peso_rejeito:
+                  type: number
+                  example: 10.5
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopercel]
+                  example: santa maria
+      responses:
+        200:
+          description: Triagem registrada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Triagem registrada com sucesso!
+        400:
+          description: Erro na requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /prensa:
+    post:
+      summary: Registrar prensa
+      description: Registra dados da prensa
+      tags:
+        - Prensa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - material_tipo
+                - qtd_fardos_prensa
+                - qnt_material_final
+                - cooperativa
+              properties:
+                material_tipo:
+                  type: string
+                  example: papel
+                qtd_fardos_prensa:
+                  type: integer
+                  example: 10
+                qnt_material_final:
+                  type: number
+                  example: 500.0
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopercel]
+                  example: santa maria
+      responses:
+        200:
+          description: Dados da prensa registrados com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dados da prensa registrados com sucesso!
+        400:
+          description: Erro na requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /bazar:
+    post:
+      summary: Registrar bazar
+      description: Registra dados do bazar
+      tags:
+        - Bazar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - valor
+                - entrada
+                - motivo
+                - cooperativa
+              properties:
+                valor:
+                  type: number
+                  example: 150.0
+                entrada:
+                  type: string
+                  example: Venda
+                motivo:
+                  type: string
+                  example: Venda de papel
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopercel]
+                  example: santa maria
+      responses:
+        200:
+          description: Dados do bazar registrados com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dados do bazar registrados com sucesso!
+        400:
+          description: Erro na requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensagem de erro
+        details:
+          type: string
+          description: Detalhes do erro (opcional)
+      example:
+        error: Credenciais inválidas
+
+    UsuarioInfo:
+      type: object
+      properties:
+        nome:
+          type: string
+          example: vitoria
+        cargo:
+          type: string
+          enum: [adm, tesoureira]
+          example: tesoureira
+
+    Filtros:
+      type: object
+      properties:
+        data_inicio:
+          type: string
+          format: date
+          description: Data inicial para filtro
+          example: "2026-01-01"
+        data_fim:
+          type: string
+          format: date
+          description: Data final para filtro
+          example: "2026-01-31"
+        peso_minimo:
+          type: number
+          description: Peso mínimo para filtro
+          example: 100
+        peso_maximo:
+          type: number
+          description: Peso máximo para filtro
+          example: 500
+        busca_texto:
+          type: string
+          description: Busca textual em material_tipo e procedencia
+          example: papel
+        ordenar_por:
+          type: string
+          description: Campo para ordenação
+          example: data_criacao
+        ordem_direcao:
+          type: string
+          enum: [asc, desc]
+          description: Direção da ordenação
+          example: desc
+        limite:
+          type: integer
+          description: Número máximo de registros
+          example: 10
+        offset:
+          type: integer
+          description: Número de registros para pular (paginação)
+          example: 0
+        material_tipo:
+          type: string
+          description: Tipo de material
+          example: papel
+        procedencia:
+          type: string
+          enum: [coleta, mercado]
+          description: Procedência do material
+          example: coleta
+
+    ConsultaResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Dados de todas as cooperativas
+        cooperativas:
+          type: string
+          example: Todas
+        cooperativa_id:
+          type: integer
+          example: 1
+        recebimento:
+          type: array
+          items:
+            type: object
+        triagem:
+          type: array
+          items:
+            type: object
+        prensa:
+          type: array
+          items:
+            type: object
+        bazar:
+          type: array
+          items:
+            type: object
+
+    Recebimento:
+      type: object
+      properties:
+        id:
+          type: integer
+        procedencia:
+          type: string
+          enum: [coleta, mercado]
+        placa_caminhao:
+          type: string
+        peso_total:
+          type: number
+        material_tipo:
+          type: string
+        recebido_por:
+          type: string
+        cooperativa_id:
+          type: integer
+        data_recebimento:
+          type: string
+          format: date-time
+
+    Triagem:
+      type: object
+      properties:
+        id:
+          type: integer
+        mesa_id:
+          type: integer
+        material_tipo:
+          type: string
+        qntd_bags:
+          type: integer
+        peso_rejeito:
+          type: number
+        cooperativa_id:
+          type: integer
+        data_triagem:
+          type: string
+          format: date-time
+
+    Prensa:
+      type: object
+      properties:
+        id:
+          type: integer
+        material_tipo:
+          type: string
+        qtd_fardos_prensa:
+          type: integer
+        qnt_material_final:
+          type: number
+        cooperativa_id:
+          type: integer
+        data_prensa:
+          type: string
+          format: date-time
+
+    Bazar:
+      type: object
+      properties:
+        id:
+          type: integer
+        valor:
+          type: number
+        entrada:
+          type: string
+        motivo:
+          type: string
+        cooperativa_id:
+          type: integer
+        data_bazar:
+          type: string
+          format: date-time
+
+securityDefinitions:
+  BearerAuth:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: "Bearer {token}"
+
+security:
+  - BearerAuth: []
+
+externalDocs:
+  description: Documentação adicional
+  url: https://github.com/seu-usuario/seu-repositorio

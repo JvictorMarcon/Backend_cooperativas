@@ -274,7 +274,7 @@ paths:
                   example: João
                 cooperativa:
                   type: string
-                  enum: [santa maria, coopercel]
+                  enum: [santa maria, coopersel]
                   example: santa maria
       responses:
         200:
@@ -331,7 +331,7 @@ paths:
                   example: 10.5
                 cooperativa:
                   type: string
-                  enum: [santa maria, coopercel]
+                  enum: [santa maria, coopersel]
                   example: santa maria
       responses:
         200:
@@ -380,7 +380,7 @@ paths:
                   example: 500.0
                 cooperativa:
                   type: string
-                  enum: [santa maria, coopercel]
+                  enum: [santa maria, coopersel]
                   example: santa maria
       responses:
         200:
@@ -429,7 +429,7 @@ paths:
                   example: Venda de papel
                 cooperativa:
                   type: string
-                  enum: [santa maria, coopercel]
+                  enum: [santa maria, coopersel]
                   example: santa maria
       responses:
         200:

@@ -12,7 +12,7 @@ load_dotenv()
 url = str(os.getenv("url"))
 key = str(os.getenv("key"))
 
-COOPERATIVAS = ["santa maria", "coopercel"]
+COOPERATIVAS = ["santa maria", "coopersel"]
 
 # Criando o cliente do Supabase
 supabase: Client = create_client(url, key)
@@ -43,7 +43,7 @@ def get_cooperativa_id_by_user(user):
     # Fallback dicionario
     usuarios_cooperativas = {
         "vitoria": 1,    # Santa Maria
-        "regina": 2,     # Coopercel
+        "regina": 2,     # Coopersel
     }
 
     return usuarios_cooperativas.get(user.lower())
@@ -106,7 +106,7 @@ def buscar_dados_por_cargo(cargo, user):
                 print(f"Usuário não encontrado no mapeamento ou sem cooperativa: {user}")
                 return None
 
-            nome_cooperativa = "Santa Maria" if cooperativa_id == 1 else "Coopercel"
+            nome_cooperativa = "Santa Maria" if cooperativa_id == 1 else "Coopersel"
 
             recebimento = supabase.table("recebimento").select(
                 "*").eq("cooperativa_id", cooperativa_id).order("id", desc=True).execute().data
@@ -367,7 +367,7 @@ def verificar_login():
         if cooperativa_id == 1:
             cooperativa_nome = "santa maria"
         elif cooperativa_id == 2:
-            cooperativa_nome = "coopercel"
+            cooperativa_nome = "coopersel"
 
         return jsonify({
             "usuario": user_autenticado,

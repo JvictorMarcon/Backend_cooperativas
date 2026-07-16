@@ -31,21 +31,21 @@ swagger = Swagger(app, template_file='openapi.yaml')
 
 # PRIMEIRO: Defina get_cooperativa_id_by_user
 def get_cooperativa_id_by_user(user):
-    """
-    Retorna o ID da cooperativa baseado no nome do usuário.
-    
-    Args:
-        user (str): Nome do usuário (vem do banco, SEM acento)
-    
-    Returns:
-        int: ID da cooperativa (1 para Santa Maria, 2 para Coopercel)
-        None: Se o usuário não estiver mapeado
-    """
+    try:
+        response = supabase.table("usuarios").select("cooperativa").eq("user", user).execute()
+        if response.data:
+            coop_val = response.data[0].get("cooperativa")
+            if coop_val is not None:
+                return int(coop_val)
+    except Exception as e:
+        print(f"Erro ao buscar cooperativa do usuario {user}: {e}")
+
+    # Fallback dicionario
     usuarios_cooperativas = {
         "vitoria": 1,    # Santa Maria
         "regina": 2,     # Coopercel
     }
-    
+
     return usuarios_cooperativas.get(user.lower())
 
 
@@ -103,7 +103,7 @@ def buscar_dados_por_cargo(cargo, user):
             cooperativa_id = get_cooperativa_id_by_user(user)
 
             if cooperativa_id is None:
-                print(f"Usuário não encontrado no mapeamento: {user}")
+                print(f"Usuário não encontrado no mapeamento ou sem cooperativa: {user}")
                 return None
 
             nome_cooperativa = "Santa Maria" if cooperativa_id == 1 else "Coopercel"
@@ -330,7 +330,7 @@ def consultar_dados():
 
         dados_consulta["usuario"] = {
             "nome": user_autenticado,
-            "cargo": cargo
+            "cargo": cargo,
         }
 
         return jsonify(dados_consulta), 200
@@ -362,9 +362,18 @@ def verificar_login():
         if not user_autenticado:
             return jsonify({"error": "Credenciais inválidas"}), 401
 
+        cooperativa_id = get_cooperativa_id_by_user(user_autenticado)
+        cooperativa_nome = None
+        if cooperativa_id == 1:
+            cooperativa_nome = "santa maria"
+        elif cooperativa_id == 2:
+            cooperativa_nome = "coopercel"
+
         return jsonify({
             "usuario": user_autenticado,
             "cargo": cargo,
+            "cooperativa": cooperativa_nome,
+            "cooperativa_id": cooperativa_id,
             "autenticado": True
         }), 200
 
@@ -454,6 +463,7 @@ def consultar_dados_filtrados():
             "filtros_aplicados": filtros,
             "total": len(resultado.data),
             "dados": resultado.data
+            
         }), 200
         
     except Exception as e:

@@ -85,10 +85,10 @@ def buscar_dados_por_cargo(cargo, user):
     try:
         if cargo == 'adm':
             recebimento = supabase.table(
-                "recebimento").select("*").execute().data
-            triagem = supabase.table("triagem").select("*").execute().data
-            prensa = supabase.table("prensa").select("*").execute().data
-            bazar = supabase.table("bazar").select("*").execute().data
+                "recebimento").select("*").order("id", desc=True).execute().data
+            triagem = supabase.table("triagem").select("*").order("id", desc=True).execute().data
+            prensa = supabase.table("prensa").select("*").order("id", desc=True).execute().data
+            bazar = supabase.table("bazar").select("*").order("id", desc=True).execute().data
 
             return {
                 "message": "Dados de todas as cooperativas",
@@ -109,13 +109,13 @@ def buscar_dados_por_cargo(cargo, user):
             nome_cooperativa = "Santa Maria" if cooperativa_id == 1 else "Coopercel"
 
             recebimento = supabase.table("recebimento").select(
-                "*").eq("cooperativa_id", cooperativa_id).execute().data
+                "*").eq("cooperativa_id", cooperativa_id).order("id", desc=True).execute().data
             triagem = supabase.table("triagem").select(
-                "*").eq("cooperativa_id", cooperativa_id).execute().data
+                "*").eq("cooperativa_id", cooperativa_id).order("id", desc=True).execute().data
             prensa = supabase.table("prensa").select(
-                "*").eq("cooperativa_id", cooperativa_id).execute().data
+                "*").eq("cooperativa_id", cooperativa_id).order("id", desc=True).execute().data
             bazar = supabase.table("bazar").select(
-                "*").eq("cooperativa_id", cooperativa_id).execute().data
+                "*").eq("cooperativa_id", cooperativa_id).order("id", desc=True).execute().data
 
             return {
                 "message": f"Dados da cooperativa {nome_cooperativa}",

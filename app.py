@@ -201,7 +201,7 @@ def enviar_triagem():
     if not dados:
         return jsonify({"error": "Nenhum dado fornecido"}), 400
 
-    campos = ["mesa_id", "material_tipo", "qntd_bags", "peso_rejeito", "cooperativa"]
+    campos = ["mesa_id", "material_tipo", "peso_rejeito", "cooperativa"]
     if not all(campo in dados for campo in campos):
         return jsonify({"error": "Campos obrigatórios ausentes"}), 400
 
@@ -215,7 +215,6 @@ def enviar_triagem():
         dados_triagem = {
             "mesa_id": int(dados["mesa_id"]),
             "material_tipo": dados["material_tipo"],
-            "qntd_bags": int(dados["qntd_bags"]),
             "peso_rejeito": float(dados["peso_rejeito"]),
             "cooperativa_id": id_cooperativa
         }
@@ -277,6 +276,12 @@ def enviar_bazar():
     if "valor" not in dados or "entrada" not in dados or "motivo" not in dados or "cooperativa" not in dados:
         return jsonify({"error": "Campos obrigatórios ausentes"}), 400
 
+    entrada = dados["entrada"]
+    # Se for entrada, metodo_pagamento é obrigatório
+    if entrada is True or str(entrada).lower() in ("true", "entrada"):
+        if not dados.get("metodo_pagamento"):
+            return jsonify({"error": "Forma de pagamento é obrigatória para entradas"}), 400
+
     cooperativa = dados["cooperativa"]
     if cooperativa.lower() not in COOPERATIVAS:
         return jsonify({"error": "Cooperativa inválida"}), 400
@@ -288,7 +293,8 @@ def enviar_bazar():
             "valor": float(dados["valor"]),
             "entrada": dados["entrada"],
             "motivo": dados["motivo"],
-            "cooperativa_id": id_cooperativa
+            "cooperativa_id": id_cooperativa,
+            "metodo_pagamento": dados.get("metodo_pagamento")  # None para saídas, obrigatório para entradas
         }
 
         supabase.table("bazar").insert(dados_bazar).execute()

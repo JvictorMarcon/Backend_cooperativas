@@ -22,6 +22,11 @@ app = Flask(__name__)
 
 CORS(app, origins="*")
 
+# Versão do OPEN API
+app.config['SWAGGER'] = {
+    'openapi' : '3.0.0'
+}
+
 swagger = Swagger(app, template_file='openapi.yaml')
 
 
@@ -71,7 +76,7 @@ def login(user, senha):
         if user_encontrado is None or cargo_encontrado is None:
             return None, None
 
-        return user_encontrado, cargo_encontrado
+        return user_encontrado, str(cargo_encontrado).lower().strip()
 
     except Exception as e:
         print(f"Erro no login: {e}")

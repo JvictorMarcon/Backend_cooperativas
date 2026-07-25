@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from flasgger import Swagger
 from supabase import create_client, Client
 from datetime import datetime
+import re
+import json
 
 # Carregando variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -94,6 +96,7 @@ def buscar_dados_por_cargo(cargo, user):
             triagem = supabase.table("triagem").select("*").order("id", desc=True).execute().data
             prensa = supabase.table("prensa").select("*").order("id", desc=True).execute().data
             bazar = supabase.table("bazar").select("*").order("id", desc=True).execute().data
+            cooperados = supabase.table('cooperados').select('*').execute().data
 
             return {
                 "message": "Dados de todas as cooperativas",
@@ -101,7 +104,8 @@ def buscar_dados_por_cargo(cargo, user):
                 "recebimento": recebimento,
                 "triagem": triagem,
                 "prensa": prensa,
-                "bazar": bazar
+                "bazar": bazar,
+                "cooperados": cooperados
             }
 
         elif cargo == 'tesoureira':
@@ -121,6 +125,7 @@ def buscar_dados_por_cargo(cargo, user):
                 "*").eq("cooperativa_id", cooperativa_id).order("id", desc=True).execute().data
             bazar = supabase.table("bazar").select(
                 "*").eq("cooperativa_id", cooperativa_id).order("id", desc=True).execute().data
+            cooperados = supabase.table('cooperados').select('*').eq('cooperativa_id', cooperativa_id).execute().data
 
             return {
                 "message": f"Dados da cooperativa {nome_cooperativa}",
@@ -129,7 +134,8 @@ def buscar_dados_por_cargo(cargo, user):
                 "recebimento": recebimento,
                 "triagem": triagem,
                 "prensa": prensa,
-                "bazar": bazar
+                "bazar": bazar,
+                "cooperados": cooperados
             }
 
         else:
@@ -311,6 +317,170 @@ def enviar_bazar():
             "error": str(e)
         }), 400
 
+
+@app.route('/adicionar_cooperado', methods = ['POST'])
+def adicionar_cooperado():
+
+    dados = request.get_json()
+
+
+    if not dados:
+        return jsonify({"error": "Nenhum dado fornecido"}), 400
+    
+    campos = ["nome","idade","cpf","funcao","cooperativa","telefone","rg","dt_nascimento","sexo","endereco"]
+
+    if not all(campo in dados for campo in campos):
+        return jsonify({"error": "Campos obrigatórios ausente"}),400
+
+    
+    if len(dados['cpf']) != 11:
+        return jsonify({"error": "CPF inválido"}),400
+
+    rg_clean = re.sub(r'\D', '', dados['rg'])
+    if len(rg_clean) not in [7,8, 9]:
+        return jsonify({"error": "RG inválido"}),400
+
+    cooperativa = dados["cooperativa"]
+
+    if cooperativa.lower() not in COOPERATIVAS:
+        return jsonify({"error":"Cooperativa inválida"}),400
+
+    id_cooperativa = 1 if cooperativa.lower() == "santa maria" else 2
+    try:
+        dados_cooperado ={
+            "nome": dados['nome'],
+            "idade": int(dados['idade']),
+            "cpf": dados['cpf'],
+            "funcao": dados['funcao'],
+            "cooperativa_id": id_cooperativa,
+            "telefone": dados['telefone'],
+            "rg": dados['rg'],
+            "data_de_nascimento": dados['dt_nascimento'],
+            "sexo": dados['sexo'],
+            "endereco": dados['endereco'],
+            "ativo": True
+        }
+
+        supabase.table('cooperados').insert(dados_cooperado).execute()
+        return jsonify({'message': 'Cooperado adicionado com sucesso!'}), 200
+    except Exception as e:
+        return jsonify({'error': 'Erro ao adicionar cooperado', 'details': str(e)}), 400
+
+@app.route('/trocar_status_cooperado', methods=['PATCH'])
+def trocar_status_cooperado():
+    dados = request.get_json()
+    
+    if not dados or ("cpf" not in dados or "cooperativa" not in dados):
+        return jsonify({'error': 'Dados não fornecidos'}), 400
+
+    cpf_atual = dados['cpf']
+    
+    if len(cpf_atual)  != 11:
+        return jsonify({"error": "CPF inválido"}),400  
+
+    cooperativa = dados['cooperativa']
+    
+    if cooperativa.lower() not in COOPERATIVAS:
+        return jsonify({'error': 'Cooperativa inválida'}),400
+
+    id_cooperativa = 1 if cooperativa.lower() == "santa maria" else 2
+    
+    try:
+        docs = supabase.table('cooperados').select('*').eq('cpf',cpf_atual).eq('cooperativa_id',id_cooperativa).limit(1).execute()
+        
+        if not docs.data:
+            return jsonify({'error': 'Cooperado não encontrado'}),404
+        
+
+        cooperado = docs.data[0]
+        status_atual = cooperado['ativo']
+
+
+        if status_atual == True:
+            status_novo = False
+        else:
+            status_novo = True
+
+        supabase.table('cooperados').update({'ativo': status_novo}).eq('cpf',cpf_atual).eq('cooperativa_id',id_cooperativa).execute()
+        return jsonify({'message': 'Status do cooperado atualizado com sucesso!'}), 200
+    except Exception as e:
+        return jsonify({'error': 'Erro ao atualizar status do cooperado', 'details': str(e)}), 400
+
+    
+
+ 
+
+@app.route('/excluir_cooperado', methods=['DELETE'])
+def excluir_cooperado():
+    try:
+        dados = request.get_json()
+
+        if not dados or ("cpf" not in dados or "cooperativa" not in dados):
+            return jsonify({'error': 'Dados não fornecidos'}), 400
+        cpf = dados['cpf']
+        cooperativa = dados['cooperativa']
+        
+        if len(cpf)  != 11:
+            return jsonify({"error": "CPF inválido"}),400  
+
+        if cooperativa.lower() not in COOPERATIVAS:
+            return jsonify({'error': 'Cooperativa inválida'}),400
+
+        id_cooperativa = 1 if cooperativa.lower() == "santa maria" else 2
+
+
+        supabase.table('cooperados').delete().eq('cpf', cpf).eq('cooperativa_id',id_cooperativa).execute()
+
+        return jsonify({'message': 'Cooperado excluído com sucesso!'}), 200
+
+    except Exception as e:
+        return jsonify({'error': 'Erro ao excluir cooperado', 'details': str(e)}), 400
+
+@app.route('/editar_cooperado', methods=['PUT'])
+def editar_cooperado():
+    try:
+        dados = request.get_json()
+
+        if not dados or 'cpf' not in dados or 'cooperativa' not in dados:
+            return jsonify({'error': 'CPF e cooperativa são obrigatórios'}), 400
+
+        cpf = dados['cpf']
+        cooperativa = dados['cooperativa']
+
+        if len(cpf) != 11:
+            return jsonify({'error': 'CPF inválido'}), 400
+
+        if cooperativa.lower() not in COOPERATIVAS:
+            return jsonify({'error': 'Cooperativa inválida'}), 400
+
+        id_cooperativa = 1 if cooperativa.lower() == "santa maria" else 2
+
+        # Verifica se o cooperado existe
+        docs = supabase.table('cooperados').select('*').eq('cpf', cpf).eq('cooperativa_id', id_cooperativa).limit(1).execute()
+
+        if not docs.data:
+            return jsonify({'error': 'Cooperado não encontrado'}), 404
+
+        # Campos que podem ser editados (whitelist)
+        campos_editaveis = ['nome', 'idade', 'funcao', 'telefone', 'rg',
+                            'data_de_nascimento', 'sexo', 'endereco', 'ativo']
+
+        # Monta o dicionário apenas com os campos que o usuário enviou
+        campos_para_atualizar = {
+            campo: dados[campo]
+            for campo in campos_editaveis
+            if campo in dados
+        }
+
+        if not campos_para_atualizar:
+            return jsonify({'error': 'Nenhum campo válido para atualizar foi fornecido'}), 400
+
+        supabase.table('cooperados').update(campos_para_atualizar).eq('cpf', cpf).eq('cooperativa_id', id_cooperativa).execute()
+
+        return jsonify({'message': 'Cooperado atualizado com sucesso!'}), 200
+
+    except Exception as e:
+        return jsonify({'error': 'Erro ao editar cooperado', 'details': str(e)}), 400
 
 @app.route('/consultar', methods=['POST'])
 def consultar_dados():

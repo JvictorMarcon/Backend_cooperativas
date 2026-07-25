@@ -588,7 +588,7 @@ def consultar_dados_filtrados():
             return jsonify({"error": "Acesso negado"}), 403
         
         # Valida tabela
-        if tabela not in ['recebimento', 'triagem', 'prensa', 'bazar']:
+        if tabela not in ['recebimento', 'triagem', 'prensa', 'bazar', 'cooperados']:
             return jsonify({"error": "Tabela inválida"}), 400
         
         # Constrói query base
@@ -603,20 +603,24 @@ def consultar_dados_filtrados():
         
         # Aplica filtros dinâmicos
         for chave, valor in filtros.items():
-            # ✅ CORRIGIDO: Filtros de data
+            # Filtros de data (data_cadastro para cooperados, data_criacao para demais)
             if chave == 'data_inicio':
-                query = query.gte("data_criacao", valor)
+                campo_data = 'data_cadastro' if tabela == 'cooperados' else 'data_criacao'
+                query = query.gte(campo_data, valor)
             elif chave == 'data_fim':
-                query = query.lte("data_criacao", valor)
+                campo_data = 'data_cadastro' if tabela == 'cooperados' else 'data_criacao'
+                query = query.lte(campo_data, valor)
             # Filtros de peso
             elif chave == 'peso_minimo':
                 query = query.gte("peso_total", float(valor))
             elif chave == 'peso_maximo':
                 query = query.lte("peso_total", float(valor))
-            # ✅ CORRIGIDO: Filtros de texto
+            # Filtros de texto
             elif chave == 'busca_texto':
-                # Supabase OR syntax
-                query = query.or_(f"material_tipo.ilike.%{valor}%,procedencia.ilike.%{valor}%")
+                if tabela == 'cooperados':
+                    query = query.or_(f"nome.ilike.%{valor}%,cpf.ilike.%{valor}%,funcao.ilike.%{valor}%")
+                else:
+                    query = query.or_(f"material_tipo.ilike.%{valor}%,procedencia.ilike.%{valor}%")
             # Filtros exatos
             else:
                 query = query.eq(chave, valor)

@@ -26,6 +26,8 @@ tags:
     description: Operações de prensa
   - name: Bazar
     description: Operações de bazar
+  - name: Cooperados
+    description: Operações de gerenciamento de cooperados
   - name: Consultas
     description: Consultas de dados
 
@@ -449,6 +451,244 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /adicionar_cooperado:
+    post:
+      summary: Adicionar novo cooperado
+      description: Cadastra um novo cooperado no banco de dados da cooperativa
+      tags:
+        - Cooperados
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nome
+                - idade
+                - cpf
+                - funcao
+                - cooperativa
+                - telefone
+                - rg
+                - dt_nascimento
+                - sexo
+                - endereco
+              properties:
+                nome:
+                  type: string
+                  example: João Silva
+                idade:
+                  type: integer
+                  example: 30
+                cpf:
+                  type: string
+                  example: "12345678901"
+                funcao:
+                  type: string
+                  example: Motorista
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopersel]
+                  example: santa maria
+                telefone:
+                  type: string
+                  example: "11999999999"
+                rg:
+                  type: string
+                  example: "123456789"
+                dt_nascimento:
+                  type: string
+                  format: date
+                  example: "1990-05-15"
+                sexo:
+                  type: string
+                  enum: [Masculino, Feminino, Outro]
+                  example: Masculino
+                endereco:
+                  type: string
+                  example: Rua das Flores, 123
+      responses:
+        200:
+          description: Cooperado adicionado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Cooperado adicionado com sucesso!
+        400:
+          description: Dados inválidos ou erro na criação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trocar_status_cooperado:
+    patch:
+      summary: Alternar status do cooperado
+      description: Alterna o status ativo/inativo de um cooperado por CPF e cooperativa
+      tags:
+        - Cooperados
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpf
+                - cooperativa
+              properties:
+                cpf:
+                  type: string
+                  example: "12345678901"
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopersel]
+                  example: santa maria
+      responses:
+        200:
+          description: Status alterado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Status do cooperado atualizado com sucesso!
+        400:
+          description: Dados inválidos ou erro na alteração
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Cooperado não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /excluir_cooperado:
+    delete:
+      summary: Excluir cooperado
+      description: Remove um cooperado do banco de dados pelo CPF e cooperativa
+      tags:
+        - Cooperados
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpf
+                - cooperativa
+              properties:
+                cpf:
+                  type: string
+                  example: "12345678901"
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopersel]
+                  example: santa maria
+      responses:
+        200:
+          description: Cooperado excluído com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Cooperado excluído com sucesso!
+        400:
+          description: Erro na exclusão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /editar_cooperado:
+    put:
+      summary: Editar cooperado
+      description: Atualiza campos específicos de um cooperado existente
+      tags:
+        - Cooperados
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpf
+                - cooperativa
+              properties:
+                cpf:
+                  type: string
+                  example: "12345678901"
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopersel]
+                  example: santa maria
+                nome:
+                  type: string
+                  example: João Silva
+                funcao:
+                  type: string
+                  example: Motorista
+                telefone:
+                  type: string
+                  example: "11999999999"
+                rg:
+                  type: string
+                  example: "123456789"
+                idade:
+                  type: integer
+                  example: 31
+                data_de_nascimento:
+                  type: string
+                  format: date
+                  example: "1990-05-15"
+                sexo:
+                  type: string
+                  example: Masculino
+                endereco:
+                  type: string
+                  example: Rua das Flores, 123
+                ativo:
+                  type: boolean
+                  example: true
+      responses:
+        200:
+          description: Cooperado atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Cooperado atualizado com sucesso!
+        400:
+          description: Dados inválidos ou erro na edição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Cooperado não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ErrorResponse:
@@ -553,7 +793,11 @@ components:
         bazar:
           type: array
           items:
-            type: object
+            $ref: '#/components/schemas/Bazar'
+        cooperados:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cooperado'
 
     Recebimento:
       type: object
@@ -629,6 +873,51 @@ components:
         data_bazar:
           type: string
           format: date-time
+
+    Cooperado:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nome:
+          type: string
+          example: João Silva
+        idade:
+          type: integer
+          example: 30
+        cpf:
+          type: string
+          example: "12345678901"
+        funcao:
+          type: string
+          example: Motorista
+        telefone:
+          type: string
+          example: "11999999999"
+        rg:
+          type: string
+          example: "123456789"
+        data_de_nascimento:
+          type: string
+          format: date
+          example: "1990-05-15"
+        sexo:
+          type: string
+          example: Masculino
+        endereco:
+          type: string
+          example: Rua das Flores, 123
+        ativo:
+          type: boolean
+          example: true
+        cooperativa_id:
+          type: integer
+          example: 1
+        data_cadastro:
+          type: string
+          format: date-time
+          example: "2026-07-24T23:02:07.182228+00:00"
 
 securityDefinitions:
   BearerAuth:

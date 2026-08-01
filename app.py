@@ -656,6 +656,41 @@ def consultar_dados_filtrados():
         return jsonify({"error": str(e)}), 500
 
 
+def generic_delete(table_name, dados):
+    if not dados or ("id" not in dados or "cooperativa" not in dados):
+        return jsonify({'error': 'Dados insuficientes. Necessário id e cooperativa.'}), 400
+    
+    registro_id = dados['id']
+    cooperativa = dados['cooperativa']
+    
+    if cooperativa.lower() not in COOPERATIVAS:
+        return jsonify({'error': 'Cooperativa inválida'}), 400
+        
+    id_cooperativa = 1 if cooperativa.lower() == "santa maria" else 2
+    
+    try:
+        supabase.table(table_name).delete().eq('id', registro_id).eq('cooperativa_id', id_cooperativa).execute()
+        return jsonify({'message': f'Registro excluído com sucesso da tabela {table_name}!'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Erro ao excluir registro de {table_name}', 'details': str(e)}), 400
+
+@app.route('/excluir_recebimento', methods=['DELETE'])
+def excluir_recebimento():
+    return generic_delete('recebimento', request.get_json())
+
+@app.route('/excluir_triagem', methods=['DELETE'])
+def excluir_triagem():
+    return generic_delete('triagem', request.get_json())
+
+@app.route('/excluir_prensa', methods=['DELETE'])
+def excluir_prensa():
+    return generic_delete('prensa', request.get_json())
+
+@app.route('/excluir_bazar', methods=['DELETE'])
+def excluir_bazar():
+    return generic_delete('bazar', request.get_json())
+
+
 # =====================================
 #     Rotas de tratamento de erros
 # =====================================

@@ -95,6 +95,12 @@ paths:
                     type: string
                     enum: [adm, tesoureira]
                     example: tesoureira
+                  cooperativa:
+                    type: string
+                    example: santa maria
+                  cooperativa_id:
+                    type: integer
+                    example: 1
                   autenticado:
                     type: boolean
                     example: true
@@ -433,6 +439,10 @@ paths:
                   type: string
                   enum: [santa maria, coopersel]
                   example: santa maria
+                metodo_pagamento:
+                  type: string
+                  description: Forma de pagamento (ex. Pix, Dinheiro, Cartão)
+                  example: Pix
       responses:
         200:
           description: Dados do bazar registrados com sucesso
@@ -446,6 +456,170 @@ paths:
                     example: Dados do bazar registrados com sucesso!
         400:
           description: Erro na requisição
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /excluir_recebimento:
+    delete:
+      summary: Excluir registro de recebimento
+      description: Remove um registro da tabela de recebimento por ID e cooperativa
+      tags:
+        - Recebimento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - cooperativa
+              properties:
+                id:
+                  type: integer
+                  example: 12
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopersel]
+                  example: santa maria
+      responses:
+        200:
+          description: Registro excluído com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registro excluído com sucesso da tabela recebimento!
+        400:
+          description: Dados insuficientes ou inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /excluir_triagem:
+    delete:
+      summary: Excluir registro de triagem
+      description: Remove um registro da tabela de triagem por ID e cooperativa
+      tags:
+        - Triagem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - cooperativa
+              properties:
+                id:
+                  type: integer
+                  example: 12
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopersel]
+                  example: santa maria
+      responses:
+        200:
+          description: Registro excluído com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registro excluído com sucesso da tabela triagem!
+        400:
+          description: Dados insuficientes ou inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /excluir_prensa:
+    delete:
+      summary: Excluir registro de prensa
+      description: Remove um registro da tabela de prensa por ID e cooperativa
+      tags:
+        - Prensa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - cooperativa
+              properties:
+                id:
+                  type: integer
+                  example: 12
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopersel]
+                  example: santa maria
+      responses:
+        200:
+          description: Registro excluído com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registro excluído com sucesso da tabela prensa!
+        400:
+          description: Dados insuficientes ou inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /excluir_bazar:
+    delete:
+      summary: Excluir registro de bazar
+      description: Remove um registro da tabela de bazar por ID e cooperativa
+      tags:
+        - Bazar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - cooperativa
+              properties:
+                id:
+                  type: integer
+                  example: 12
+                cooperativa:
+                  type: string
+                  enum: [santa maria, coopersel]
+                  example: santa maria
+      responses:
+        200:
+          description: Registro excluído com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registro excluído com sucesso da tabela bazar!
+        400:
+          description: Dados insuficientes ou inválidos
           content:
             application/json:
               schema:

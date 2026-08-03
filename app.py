@@ -166,13 +166,12 @@ def enviar_recebimento():
     if not dados:
         return jsonify({"error": "Nenhum dado fornecido"}), 400
 
-    campos = ["procedencia", "placa_caminhao", "peso_total", 
-              "material_tipo", "recebido_por", "cooperativa"]
+    campos = ["procedencia", "peso_total", "material_tipo", "recebido_por", "cooperativa"]
     if not all(campo in dados for campo in campos):
         return jsonify({"error": "Campos obrigatórios ausentes"}), 400
 
     procedencia = dados["procedencia"]
-    if procedencia not in ["coleta", "mercado"]:
+    if procedencia not in ["coleta", "mercado", "doacao","catador"]:
         return jsonify({"error": "Procedência inválida"}), 400
 
     cooperativa = dados["cooperativa"]
@@ -181,14 +180,22 @@ def enviar_recebimento():
 
     id_cooperativa = 1 if cooperativa.lower() == "santa maria" else 2
 
+    # Placa: obrigatória apenas para coleta
+    placa_caminhao = dados.get("placa_caminhao", "")
+    if procedencia == "coleta" and not placa_caminhao:
+        return jsonify({"error": "Placa do caminhão é obrigatória para coleta"}), 400
+
     try:
         dados_recebimento = {
             "procedencia": procedencia,
-            "placa_caminhao": dados["placa_caminhao"],
+            "placa_caminhao": placa_caminhao,
             "peso_total": float(dados["peso_total"]),
             "material_tipo": dados["material_tipo"],
             "recebido_por": dados["recebido_por"],
-            "cooperativa_id": id_cooperativa
+            "cooperativa_id": id_cooperativa,
+            "nome_mercado": dados.get("nome_mercado", "").lower() if dados.get("nome_mercado") else None,
+            "cidade": dados.get("cidade", None),
+            "peso_rejeito": float(dados.get("peso_rejeito", 0)) if dados.get("peso_rejeito") else 0,
         }
 
         supabase.table("recebimento").insert(dados_recebimento).execute()
@@ -198,9 +205,60 @@ def enviar_recebimento():
             "horario_envio": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         }), 200
 
+
     except Exception as e:
         return jsonify({
             "message": "Ocorreu um erro ao cadastrar os dados no banco de dados.",
+            "error": str(e)
+        }), 400
+
+
+@app.route('/recebimento/catador', methods=['POST'])
+def enviar_recebimento_catador():
+    dados = request.get_json()
+
+    if not dados:
+        return jsonify({"error": "Nenhum dado fornecido"}), 400
+
+    campos = ["material_tipo", "preco_kg", "peso_total", "nome_catador", "recebido_por", "cooperativa"]
+    if not all(campo in dados for campo in campos):
+        return jsonify({"error": "Campos obrigatórios ausentes"}), 400
+
+    cooperativa = dados["cooperativa"]
+    if cooperativa.lower() not in COOPERATIVAS:
+        return jsonify({"error": "Cooperativa inválida"}), 400
+
+    id_cooperativa = 1 if cooperativa.lower() == "santa maria" else 2
+
+    try:
+        preco_kg = float(dados["preco_kg"])
+        peso_total = float(dados["peso_total"])
+        valor_pago = round(preco_kg * peso_total, 2)
+
+        dados_recebimento = {
+            "procedencia": "catador",
+            "placa_caminhao": "",
+            "peso_total": peso_total,
+            "material_tipo": dados["material_tipo"],
+            "recebido_por": dados["recebido_por"],
+            "cooperativa_id": id_cooperativa,
+            "nome_catador": dados["nome_catador"],
+            "preco_kg": preco_kg,
+            "valor_pago": valor_pago,
+            "cidade": "itapeva",
+        }
+
+        supabase.table("recebimento").insert(dados_recebimento).execute()
+
+        return jsonify({
+            "message": "Recebimento de catador registrado com sucesso!",
+            "valor_pago": valor_pago,
+            "horario_envio": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "message": "Erro ao registrar recebimento do catador.",
             "error": str(e)
         }), 400
 

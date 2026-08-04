@@ -97,6 +97,7 @@ def buscar_dados_por_cargo(cargo, user):
             prensa = supabase.table("prensa").select("*").order("id", desc=True).execute().data
             bazar = supabase.table("bazar").select("*").order("id", desc=True).execute().data
             cooperados = supabase.table('cooperados').select('*').execute().data
+            vendas = supabase.table('vendas').select('*').order('id', desc=True).execute().data
 
             return {
                 "message": "Dados de todas as cooperativas",
@@ -105,7 +106,8 @@ def buscar_dados_por_cargo(cargo, user):
                 "triagem": triagem,
                 "prensa": prensa,
                 "bazar": bazar,
-                "cooperados": cooperados
+                "cooperados": cooperados,
+                "vendas": vendas
             }
 
         elif cargo == 'tesoureira':
@@ -126,6 +128,7 @@ def buscar_dados_por_cargo(cargo, user):
             bazar = supabase.table("bazar").select(
                 "*").eq("cooperativa_id", cooperativa_id).order("id", desc=True).execute().data
             cooperados = supabase.table('cooperados').select('*').eq('cooperativa_id', cooperativa_id).execute().data
+            vendas = supabase.table('vendas').select('*').eq('cooperativa_id', cooperativa_id).order('id', desc=True).execute().data
 
             return {
                 "message": f"Dados da cooperativa {nome_cooperativa}",
@@ -135,7 +138,8 @@ def buscar_dados_por_cargo(cargo, user):
                 "triagem": triagem,
                 "prensa": prensa,
                 "bazar": bazar,
-                "cooperados": cooperados
+                "cooperados": cooperados,
+                "vendas": vendas
             }
 
         else:
@@ -157,7 +161,6 @@ def index():
         "version": 1.0,
         "author": "João Victor Marcondes"
     }), 200
-
 
 @app.route('/recebimento', methods=['POST'])
 def enviar_recebimento():
@@ -212,7 +215,6 @@ def enviar_recebimento():
             "error": str(e)
         }), 400
 
-
 @app.route('/recebimento/catador', methods=['POST'])
 def enviar_recebimento_catador():
     dados = request.get_json()
@@ -262,7 +264,6 @@ def enviar_recebimento_catador():
             "error": str(e)
         }), 400
 
-
 @app.route('/triagem', methods=['POST'])
 def enviar_triagem():
     dados = request.get_json()
@@ -298,7 +299,6 @@ def enviar_triagem():
             "error": str(e)
         }), 400
 
-
 @app.route('/prensa', methods=['POST'])
 def enviar_prensa():
     dados = request.get_json()
@@ -333,7 +333,6 @@ def enviar_prensa():
             "message": "Erro ao registrar prensa no banco de dados.",
             "error": str(e)
         }), 400
-
 
 @app.route('/bazar', methods=['POST'])
 def enviar_bazar():
@@ -374,7 +373,6 @@ def enviar_bazar():
             "message": "Erro ao registrar bazar no banco de dados.",
             "error": str(e)
         }), 400
-
 
 @app.route('/adicionar_cooperado', methods = ['POST'])
 def adicionar_cooperado():
@@ -463,10 +461,6 @@ def trocar_status_cooperado():
         return jsonify({'message': 'Status do cooperado atualizado com sucesso!'}), 200
     except Exception as e:
         return jsonify({'error': 'Erro ao atualizar status do cooperado', 'details': str(e)}), 400
-
-    
-
- 
 
 @app.route('/excluir_cooperado', methods=['DELETE'])
 def excluir_cooperado():
@@ -581,7 +575,6 @@ def consultar_dados():
             "details": str(e)
         }), 500
 
-
 @app.route('/login', methods=['POST'])
 def verificar_login():
     try:
@@ -623,7 +616,6 @@ def verificar_login():
             "details": str(e)
         }), 500
 
-
 @app.route('/consultar/filtrado', methods=['POST'])
 def consultar_dados_filtrados():
     try:
@@ -646,7 +638,7 @@ def consultar_dados_filtrados():
             return jsonify({"error": "Acesso negado"}), 403
         
         # Valida tabela
-        if tabela not in ['recebimento', 'triagem', 'prensa', 'bazar', 'cooperados']:
+        if tabela not in ['recebimento', 'triagem', 'prensa', 'bazar', 'cooperados', 'vendas']:
             return jsonify({"error": "Tabela inválida"}), 400
         
         # Constrói query base
@@ -661,12 +653,22 @@ def consultar_dados_filtrados():
         
         # Aplica filtros dinâmicos
         for chave, valor in filtros.items():
-            # Filtros de data (data_cadastro para cooperados, data_criacao para demais)
+            # Filtros de data (data_cadastro para cooperados, created_at para vendas, data_criacao para demais)
             if chave == 'data_inicio':
-                campo_data = 'data_cadastro' if tabela == 'cooperados' else 'data_criacao'
+                if tabela == 'cooperados':
+                    campo_data = 'data_cadastro'
+                elif tabela == 'vendas':
+                    campo_data = 'created_at'
+                else:
+                    campo_data = 'data_criacao'
                 query = query.gte(campo_data, valor)
             elif chave == 'data_fim':
-                campo_data = 'data_cadastro' if tabela == 'cooperados' else 'data_criacao'
+                if tabela == 'cooperados':
+                    campo_data = 'data_cadastro'
+                elif tabela == 'vendas':
+                    campo_data = 'created_at'
+                else:
+                    campo_data = 'data_criacao'
                 query = query.lte(campo_data, valor)
             # Filtros de peso
             elif chave == 'peso_minimo':
@@ -713,7 +715,6 @@ def consultar_dados_filtrados():
         print(f"Erro: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-
 def generic_delete(table_name, dados):
     if not dados or ("id" not in dados or "cooperativa" not in dados):
         return jsonify({'error': 'Dados insuficientes. Necessário id e cooperativa.'}), 400
@@ -747,6 +748,51 @@ def excluir_prensa():
 @app.route('/excluir_bazar', methods=['DELETE'])
 def excluir_bazar():
     return generic_delete('bazar', request.get_json())
+
+@app.route('/excluir_venda', methods=['DELETE'])
+def excluir_venda():
+    return generic_delete('vendas', request.get_json())
+
+
+@app.route('/vendas', methods=['POST'])
+def cadastrar_venda():
+    dados = request.get_json()
+
+    if not dados:
+        return jsonify({"error": "Nenhum dado fornecido"}), 400
+
+    campos = ["quantidade_kg", "nfe", "comprador_razao_social", "material", "total", "cooperativa"]
+    if not all(campo in dados for campo in campos):
+        return jsonify({"error": "Campos obrigatórios ausentes"}), 400
+
+    cooperativa = dados["cooperativa"]
+    if cooperativa.lower() not in COOPERATIVAS:
+        return jsonify({"error": "Cooperativa inválida"}), 400
+
+    id_cooperativa = 1 if cooperativa.lower() == "santa maria" else 2
+
+    try:
+        dados_venda = {
+            "quantidade_kg": float(dados["quantidade_kg"]),
+            "nfe": int(dados["nfe"]),
+            "comprador/razao_social": dados["comprador_razao_social"],
+            "material": dados["material"],
+            "total": float(dados["total"]),
+            "cooperativa_id": id_cooperativa
+        }
+
+        supabase.table("vendas").insert(dados_venda).execute()
+
+        return jsonify({
+            "message": "Venda cadastrada com sucesso!",
+            "horario_envio": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "message": "Erro ao cadastrar venda no banco de dados.",
+            "error": str(e)
+        }), 400
 
 
 # =====================================
